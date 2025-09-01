@@ -43,15 +43,16 @@ typedef struct Queue_t{
     qSize_t size;
 } Queue_t;
 
+qNode_t* createNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t data_size);
+qNode_t* appendNode(qNode_t* currNode, qData_t* data, qDataSize_t data_size);
 void qInit(Queue_t** qPtr);
-void qPush(Queue_t* q, qData_t* data, qDataSize_t size);
-void qEnqueue(Queue_t* q, qData_t* data, qDataSize_t size);
-qData_t qDequeue(Queue_t* q);
-qData_t qPop(Queue_t* q);
+void qPush(Queue_t* q, qData_t* data, qDataSize_t data_size);
+void qEnqueue(Queue_t* q, qData_t* data, qDataSize_t data_size);
+void qDequeue(Queue_t* q, qData_t* data, qDataSize_t data_size);
+void qPop(Queue_t* q, qData_t* data, qDataSize_t data_size);
 qNode_t* qHead(Queue_t* q);
 qNode_t* qTail(Queue_t* q);
 qSize_t  qSize(Queue_t* q);
 void qFree(Queue_t* q);
-
 
 #endif
