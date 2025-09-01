@@ -1,3 +1,6 @@
+#ifndef __COLOR_H__
+#define __COLOR_H__
+
 #define BLACK       0,      0,      0,      255
 #define WHITE       255,    255,    255,    255
 #define RED         255,    0,      0,      255
@@ -28,3 +31,5 @@
 #define DARKGRAY    169,    169,    169,    255
 #define LIGHTGRAY   211,    211,    211,    255
 #define SILVER      192,    192,    192,    255
+
+#endif

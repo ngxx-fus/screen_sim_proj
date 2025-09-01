@@ -1,25 +1,48 @@
 #include "app.h"
 
-SDL_Window *gWindow = NULL;
-SDL_Renderer *gRenderer = NULL;
+SDL_Window      *gWindow        = NULL;
+SDL_Renderer    *gRenderer      = NULL;
+SDL_Texture     *gTexture       = NULL;
+TTF_Font        *font           = NULL;
+Queue_t         *toMainThrQueue = NULL;
+Queue_t         *toAppThrQueue  = NULL;
+pthread_mutex_t SDLLock         = PTHREAD_MUTEX_INITIALIZER;
+sim_status_t    simStatus      = STATUS_STOPPED;
 
-__attribute__((weak)) void 
-main_app() {
-    printf("No main_app() implemented!\n");
+int app_thread(void *data) {
+    main_app();
+    return 0;
 }
 
 int main() {
-    SDL_Init(SDL_INIT_VIDEO);
-    gWindow = SDL_CreateWindow("Screen Sim",
-                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
-    gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED);
+    __sim_entry("main()");
+    simStatus = STATUS_RUNNING;
+    qInit(&toMainThrQueue);
+    qInit(&toAppThrQueue);
+    if (screen_init() != STATUS_OKE) return ERROR_UNKNOWN;
+    if (font_init()   != STATUS_OKE) return ERROR_UNKNOWN;
 
-    /// Start sim
-    main_app();
+    SDL_Thread *thread = SDL_CreateThread(app_thread, "AppThread", NULL);
+    if (!thread) {
+        printf("[main] SDL_CreateThread failed: %s\n", SDL_GetError());
+        return ERROR_UNKNOWN;
+    }
 
-    SDL_DestroyRenderer(gRenderer);
-    SDL_DestroyWindow(gWindow);
-    SDL_Quit();
+    SDL_Event e;
+    while (simStatus == STATUS_RUNNING) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) {
+                simStatus = STATUS_STOPPED;
+            }
+        }
+        SDL_RenderPresent(gRenderer);
+        SDL_Delay(16); // ~60 FPS tick
+    }
+
+    screen_exit();
+    qFree(toMainThrQueue);
+    qFree(toAppThrQueue);
+    __sim_exit("main()");
     return 0;
 }
+

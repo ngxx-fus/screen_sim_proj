@@ -1,3 +1,6 @@
+#include "sim_api.h"
+#define abs(x) (((x)<0)?(x):(-1*(x)))
+
 void lineBresenham(int x1, int y1, int x2, int y2){
     int x, y, Dx, Dy, p, c1, c2;
     Dx = abs(x2 - x1);
@@ -47,5 +50,9 @@ void lineBresenham(int x1, int y1, int x2, int y2){
 }
 
 void main_app(){
-    
+    __sim_entry("main_app()");
+    while (simStatus == STATUS_RUNNING){
+        __sim_log("[main_app()] runing...");
+        __sim_sleep(2);
+    }
 }

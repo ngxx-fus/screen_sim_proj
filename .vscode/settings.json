@@ -1,5 +1,28 @@
 {
     "files.associations": {
-        "sdl.h": "c"
+        "sdl.h": "c",
+        "sdl_ttf.h": "c",
+        "color.h": "c",
+        "app.h": "c",
+        "pthread.h": "c",
+        "global.h": "c",
+        "sdl_scancode.h": "c",
+        "input.h": "c",
+        "unistd.h": "c",
+        "stdint.h": "c",
+        "queue.h": "c",
+        "config.h": "c",
+        "variant": "c",
+        "string.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "format": "c",
+        "initializer_list": "c",
+        "span": "c",
+        "stdlib.h": "c",
+        "algorithm": "c",
+        "random": "c",
+        "limits": "c",
+        "numeric": "c"
     }
 }

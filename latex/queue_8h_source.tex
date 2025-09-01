@@ -1,0 +1,45 @@
+\doxysection{queue.\+h}
+\hypertarget{queue_8h_source}{}\label{queue_8h_source}\index{include/queue.h@{include/queue.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ \_\_QUEUE\_H\_\_}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ \_\_QUEUE\_H\_\_}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <stdio.h>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <stdint.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <stdlib.h>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <stdbool.h>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ \_\_is\_null(ptr)\ \ ((ptr)\ ==\ NULL)}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#define\ QDATA\_TYPE\ \ \ \ \ \ uint16\_t\ \ }}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#define\ QSIZE\_TYPE\ \ \ \ \ \ uint32\_t\ \ }}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{typedef}\ QDATA\_TYPE\ qData\_t;}
+\DoxyCodeLine{00014\ \textcolor{keyword}{typedef}\ QSIZE\_TYPE\ qSize\_t;}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structqNode__t}{qNode\_t}}\ \{}
+\DoxyCodeLine{00017\ \ \ \ \ qData\_t\ data;}
+\DoxyCodeLine{00018\ \ \ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structqNode__t}{qNode\_t}}*\ next;}
+\DoxyCodeLine{00019\ \ \ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structqNode__t}{qNode\_t}}*\ prev;}
+\DoxyCodeLine{00020\ \}\ \mbox{\hyperlink{structqNode__t}{qNode\_t}};}
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structQueue__t}{Queue\_t}}\{}
+\DoxyCodeLine{00023\ \ \ \ \ \mbox{\hyperlink{structqNode__t}{qNode\_t}}*\ head;}
+\DoxyCodeLine{00024\ \ \ \ \ \mbox{\hyperlink{structqNode__t}{qNode\_t}}*\ tail;}
+\DoxyCodeLine{00025\ \ \ \ \ qSize\_t\ size;}
+\DoxyCodeLine{00026\ \}\ \mbox{\hyperlink{structQueue__t}{Queue\_t}};}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00028\ \textcolor{keywordtype}{void}\ qInit(\mbox{\hyperlink{structQueue__t}{Queue\_t}}**\ qPtr);}
+\DoxyCodeLine{00029\ \textcolor{keywordtype}{void}\ qPush(\mbox{\hyperlink{structQueue__t}{Queue\_t}}*\ q,\ qData\_t\ data);}
+\DoxyCodeLine{00030\ \textcolor{keywordtype}{void}\ qEnqueue(\mbox{\hyperlink{structQueue__t}{Queue\_t}}*\ q,\ qData\_t\ data);}
+\DoxyCodeLine{00031\ qData\_t\ qDequeue(\mbox{\hyperlink{structQueue__t}{Queue\_t}}*\ q);}
+\DoxyCodeLine{00032\ qData\_t\ qPop(\mbox{\hyperlink{structQueue__t}{Queue\_t}}*\ q);}
+\DoxyCodeLine{00033\ \mbox{\hyperlink{structqNode__t}{qNode\_t}}*\ qHead(\mbox{\hyperlink{structQueue__t}{Queue\_t}}*\ q);}
+\DoxyCodeLine{00034\ \mbox{\hyperlink{structqNode__t}{qNode\_t}}*\ qTail(\mbox{\hyperlink{structQueue__t}{Queue\_t}}*\ q);}
+\DoxyCodeLine{00035\ qSize\_t\ \ qSize(\mbox{\hyperlink{structQueue__t}{Queue\_t}}*\ q);}
+\DoxyCodeLine{00036\ \textcolor{keywordtype}{void}\ qFree(\mbox{\hyperlink{structQueue__t}{Queue\_t}}*\ q);}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

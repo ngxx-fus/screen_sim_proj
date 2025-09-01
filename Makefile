@@ -1,13 +1,32 @@
-CC=gcc
-CFLAGS=-Wall -Iinclude `sdl2-config --cflags`
-LDFLAGS=`sdl2-config --libs` -lSDL2_ttf
-SRC=app.c $(wildcard src/*.c)
-OBJ=$(SRC:.c=.o)
+CC      := gcc
+CFLAGS  := 	-Wall \
+			-Iinclude \
+			-Iconfig \
+			-Ilib \
+			-I/usr/include/SDL2 \
+CC      := gcc
+LDFLAGS := -lSDL2 -lSDL2_ttf
+SRC     := app.c $(wildcard src/*.c) $(wildcard include/*.c) $(wildcard lib/queue/*.c)
+OBJ     := $(SRC:.c=.o)
+BIN     := app
 
-all: app
+.PHONY: all sim clean
+.PHONY: all sim clean deps
 
-app: $(OBJ)
-	$(CC) -o $@ $^ $(LDFLAGS)
+all: $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(OBJ) -o $@ $(LDFLAGS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+sim: $(BIN)
+	./$(BIN)
 
 clean:
-	rm -f app $(OBJ)
+	rm -vf $(OBJ) $(BIN)
+
+
+deps:
+	$(CC) $(CFLAGS) -H -c src/main.c 2>&1 | tee deps.txt
