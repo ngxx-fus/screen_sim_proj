@@ -44,6 +44,11 @@ extern Queue_t          *toAppThrQueue;
 extern Queue_t          *keyboardEventQueue;
 extern pthread_mutex_t  SDLLock;
 extern sim_status_t     simStatus;
+
+#define __entry_critial_section()       pthread_mutex_lock(&SDLLock)
+#define __try_entry_critial_section()   pthread_mutex_trylock(&SDLLock)
+#define __exit_critial_section()        pthread_mutex_unlock(&SDLLock)
+
 /// DEBUG SETUP ///////////////////////////////////////////////////////////////////////////////////
 
 static void __sim_vlog(const char* tag, const char* fmt, va_list args) {

@@ -3,6 +3,23 @@
 #include "global.h"
 #include <SDL2/SDL_scancode.h>
 
+void     queue_init(){
+    __sim_entry("queue_init()");
+    simStatus = STATUS_RUNNING;
+    qInit(&toMainThrQueue);
+    qInit(&toAppThrQueue);
+    qInit(&keyboardEventQueue);
+    __sim_entry("queue_exit()");
+}
+
+void     queue_exit(){
+    __sim_entry("queue_exit()");
+    qFree(toMainThrQueue);
+    qFree(toAppThrQueue);
+    qFree(keyboardEventQueue);
+    __sim_exit("queue_exit()");
+}
+
 return_t font_init(){
     __sim_entry("font_init()");
     if (TTF_Init() < 0) {
@@ -16,6 +33,16 @@ return_t font_init(){
     }
     __sim_exit("font_init()");
     return STATUS_OKE;
+}
+
+void font_exit() {
+    __sim_entry("font_exit()");
+    if (font) {
+        TTF_CloseFont(font);
+        font = NULL;
+    }
+    TTF_Quit();
+    __sim_exit("font_exit()");
 }
 
 return_t screen_init(){
@@ -40,7 +67,7 @@ return_t screen_init(){
     return STATUS_OKE;
 }
 
-void screen_exit(){
+void     screen_exit(){
     __sim_entry("screen_exit()");
     SDL_DestroyRenderer(gRenderer);
     SDL_DestroyWindow(gWindow);
@@ -48,7 +75,8 @@ void screen_exit(){
     __sim_exit("screen_exit()");
 }
 
-__attribute__((weak)) void main_app(){
+__attribute__((weak)) 
+void     main_app(){
     const char* msg = "[main_app] No main_app() implemented!\n";
     printf("%s", msg);
 
@@ -77,47 +105,44 @@ __attribute__((weak)) void main_app(){
     SDL_RenderPresent(gRenderer);
 }
 
-void *input_loop(void *arg){
-    __sim_entry("input_loop");
-
+int      input_thread(void *arg) {
+    __sim_entry("input_loop()");
+    void* __keycode_ptr = NULL;
     SDL_Event e;
     while (simStatus == STATUS_RUNNING) {
         while (SDL_PollEvent(&e)) {
             switch (e.type) {
-            case SDL_QUIT:
-                __sim_log("SDL_QUIT received");
-                simStatus = STATUS_STOPPED;
-                break;
+                case SDL_QUIT:
+                    __sim_log("SDL_QUIT received");
+                    simStatus = STATUS_STOPPED;
+                    break;
 
-            case SDL_KEYDOWN:
-                pthread_mutex_lock(&SDLLock);
-                __sim_log("KeyDown: %s (code=%d)",
-                          SDL_GetKeyName(e.key.keysym.sym),
-                          e.key.keysym.sym);
-                queue_push(toAppThrQueue,
-                           &e.key.keysym.sym,
-                           sizeof(e.key.keysym.sym));
-                pthread_mutex_unlock(&SDLLock);
-                break;
+                case SDL_KEYDOWN:
+                    __keycode_ptr = malloc(sizeof(e.key.keysym.sym));
+                    memcpy(__keycode_ptr, &e.key.keysym.sym, sizeof(e.key.keysym.sym));
+                    __entry_critial_section();
+                    qPush(keyboardEventQueue, __keycode_ptr, sizeof(e.key.keysym.sym));
+                    __exit_critial_section();
+                    __sim_log("KeyDown: %s (code=%d)", SDL_GetKeyName(e.key.keysym.sym), e.key.keysym.sym);
+                    free(__keycode_ptr);
+                    break;
 
-            case SDL_KEYUP:
-                pthread_mutex_lock(&SDLLock);
-                __sim_log("KeyUp: %s (code=%d)",
-                          SDL_GetKeyName(e.key.keysym.sym),
-                          e.key.keysym.sym);
-                pthread_mutex_unlock(&SDLLock);
-                break;
+                case SDL_KEYUP:
+                    // __entry_critial_section();
+                    // __sim_log("KeyUp: %s (code=%d)", SDL_GetKeyName(e.key.keysym.sym), e.key.keysym.sym);
+                    // __exit_critial_section();
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
             }
         }
 
         __sim_sleep(0.01);
     }
 
-    __sim_exit("input_loop");
-    return NULL;
+    __sim_exit("input_loop()");
+    return 0;
 }
 
 #endif

@@ -1,6 +1,0 @@
-INPUT = src include app.c config
-FILE_PATTERNS = *.c *.h
-HAVE_DOT = YES
-INCLUDE_GRAPH = YES
-INCLUDED_BY_GRAPH = YES
-INCLUDE_PATH = include config /usr/include/SDL2

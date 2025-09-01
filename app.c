@@ -6,6 +6,7 @@ SDL_Texture     *gTexture       = NULL;
 TTF_Font        *font           = NULL;
 Queue_t         *toMainThrQueue = NULL;
 Queue_t         *toAppThrQueue  = NULL;
+Queue_t         *keyboardEventQueue = NULL;
 pthread_mutex_t SDLLock         = PTHREAD_MUTEX_INITIALIZER;
 sim_status_t    simStatus      = STATUS_STOPPED;
 
@@ -16,15 +17,21 @@ int app_thread(void *data) {
 
 int main() {
     __sim_entry("main()");
-    simStatus = STATUS_RUNNING;
-    qInit(&toMainThrQueue);
-    qInit(&toAppThrQueue);
+    atexit(screen_exit);
+    atexit(font_exit);
+    atexit(queue_exit);
+
     if (screen_init() != STATUS_OKE) return ERROR_UNKNOWN;
     if (font_init()   != STATUS_OKE) return ERROR_UNKNOWN;
 
-    SDL_Thread *thread = SDL_CreateThread(app_thread, "AppThread", NULL);
-    if (!thread) {
-        printf("[main] SDL_CreateThread failed: %s\n", SDL_GetError());
+    SDL_Thread *thread0 = SDL_CreateThread(app_thread, "AppThread", NULL);
+    if (!thread0) {
+        printf("[main] AppThread failed: %s\n", SDL_GetError());
+        return ERROR_UNKNOWN;
+    }
+    SDL_Thread *thread1 = SDL_CreateThread(input_thread, "InputThread", NULL);
+    if (!thread1) {
+        printf("[main] Create InputThread failed: %s\n", SDL_GetError());
         return ERROR_UNKNOWN;
     }
 
@@ -39,9 +46,9 @@ int main() {
         SDL_Delay(16); // ~60 FPS tick
     }
 
-    screen_exit();
-    qFree(toMainThrQueue);
-    qFree(toAppThrQueue);
+    // screen_exit();
+    // queue_exit();
+    // font_exit();
     __sim_exit("main()");
     return 0;
 }
