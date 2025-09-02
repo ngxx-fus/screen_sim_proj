@@ -4,6 +4,20 @@ This project is made to develop the UI (from scratch). I realize that every time
 
 # How does it work
 
+## Architecture
+
+```
+    +------------------------------+
+    | CODE IN `src` (to be sim)    |
+    +------------------------------+
+    | USER'S RE-DEF API            |
+    +------------------------------+
+    | PSEUDO HW API (GPIO/INT)     |
+    +------------------------------+
+    | CORE UI (USING SDL)          |
+    +------------------------------+
+```
+
 ## Directory tree
 
 ```
