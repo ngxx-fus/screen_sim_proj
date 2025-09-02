@@ -10,16 +10,13 @@ Queue_t         *toMainThrQueue         = NULL;
 Queue_t         *toAppThrQueue          = NULL;
 Queue_t         *keyboardEventQueue     = NULL;
 pthread_mutex_t SDLLock                 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t simFlagLock             = PTHREAD_MUTEX_INITIALIZER;
 simStatus_t     simStatus               = STATUS_STOPPED;
-simIntReg_t     negInterruptRegister    = 0;
-simIntReg_t     posInterruptRegister    = 0;
 uint32_t        simFlag                 = 0;
 
 int app_thread(void *data) {
     __sim_entry("app_thread(...)");
-
     main_app();
-    
     __sim_exit("app_thread(...)");
     return 0;
 }

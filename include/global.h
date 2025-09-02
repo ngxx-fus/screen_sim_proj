@@ -35,12 +35,18 @@ extern simIntReg_t      negInterruptRegister;   /// Interrupt resgister
 extern simIntReg_t      posInterruptRegister;   /// Interrupt resgister
 extern simFlag_t        simFlag;                /// Software (System) flag
 
-/// @brief Enter a critical section (blocking until lock acquired)
-#define __entry_critical_section(mutex)         pthread_mutex_lock(mutex)
-/// @brief Try to enter a critical section (non-blocking, returns 0 if success)
-#define __try_entry_critical_section(mutex)      pthread_mutex_trylock(mutex)
-/// @brief Exit a critical section (release lock)
-#define __exit_critical_section(mutex)           pthread_mutex_unlock(mutex)
+#ifndef __entry_critical_section
+    /// @brief Enter a critical section (blocking until lock acquired)
+    #define __entry_critical_section(mutex)         pthread_mutex_lock(mutex)
+#endif
+#ifndef __try_entry_critical_section
+    /// @brief Try to enter a critical section (non-blocking, returns 0 if success)
+    #define __try_entry_critical_section(mutex)      pthread_mutex_trylock(mutex)
+#endif
+#ifndef __exit_critical_section
+    /// @brief Exit a critical section (release lock)
+    #define __exit_critical_section(mutex)           pthread_mutex_unlock(mutex)
+#endif
 
 /// @brief Enter SDL critical section (blocking until lock acquired)
 #define __entry_SDL_critical_section()          pthread_mutex_lock(&SDLLock)

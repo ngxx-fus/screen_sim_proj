@@ -3,6 +3,7 @@
 #include "../log/log.h"
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_keycode.h>
+#include <cstdint>
 #include <stdint.h>
 #include <string.h>
 
@@ -13,89 +14,47 @@
 #define CLR_ISR_FUNC(i)             ISR_FUNC_PTR(i) = NULL
 #define SET_ISR_FUNC(i, isr)        ISR_FUNC_PTR(i) = (isr)
 
-typedef void (*ISR_t)(void); 
+typedef void (*simISRFuncPtr_t)(void); 
+enum TYPE_OF_INTERRUPT {
+    SIM_HW_PULLDOWN     = 0,
+    SIM_HW_PULLUP       = 1,
+};
 
-extern Queue_t* queueInterrupt;
-extern ISR_t    interruptService[INTTERUPT_COUNT];
+extern pthread_mutex_t simInterruptLock;                            /// Mutex lock for interupt
+extern Queue_t*        queueInterrupt;                              /// Queue of interrupt request
+extern simIntReg_t     negInterruptEventRegister;                   /// Flags of neg-edge interrupt event 
+extern simIntReg_t     posInterruptEventRegister;                   /// Flags of pos-edge interrupt event
+extern simIntReg_t     negInterruptEnableRegister;                  /// Flags of neg-edge interrupt enable 
+extern simIntReg_t     posInterruptEnableRegister;                  /// Flags of pos-edge interrupt enable 
+extern simISRFuncPtr_t interruptPullDownService[INTTERUPT_COUNT];   /// Pointers to ISR_FUNC (pulldown)
+extern simISRFuncPtr_t interruptPullUpService[INTTERUPT_COUNT];     /// Pointers to ISR_FUNC (pullup)
 
-#ifndef __mask8
-    #define __mask8(i)                      (((uint8_t)1) << (i))
-#endif
-#ifndef __mask32
-    #define __mask32(i)                     (((uint32_t)1)<< (i))
-#endif
-#ifndef __mask64
-    #define __mask64(i)                     (((uint64_t)1)<< (i))
-#endif
-#ifndef __inv_mask8
-    #define __inv_mask8(i)                  ((uint8_t)(~((uint8_t)1 << (i))))
-#endif
-#ifndef __inv_mask32
-    #define __inv_mask32(i)                 ((uint32_t)(~((uint32_t)1 << (i))))
-#endif
-#ifndef __inv_mask64
-    #define __inv_mask64(i)                 ((uint64_t)(~((uint64_t)1 << (i))))
-#endif
-#ifndef __is_null
-    #define __is__not_null(ptr) ((ptr)!=NULL)
-#endif
-#ifndef __is_not_null
-    #define __is_not_null(ptr) ((ptr)!=NULL)
-#endif
-
-#define isr_func_name(i)          __default_isr##i
+#define TO_STRING(i) #i
+#define isr_func_name(i)          __isr_fn##i
+#define isr_func(i)               isr_func_name(i)()
 #define default_isr_prototype(i)  __attribute__((weak)) void isr_func_name(i) ()
-#define default_isr_definition(i) __attribute__((weak)) void isr_func_name(i) (){__sim_log("Default isr%d()", i);}
+#define default_isr_definition(i) __attribute__((weak)) void isr_func_name(i) () \
+                                    {__sim_log("Default isr_%s() is called!", TO_STRING(i));}
 
-default_isr_prototype(0); default_isr_prototype(1); default_isr_prototype(2); 
-default_isr_prototype(3); default_isr_prototype(4); default_isr_prototype(5); 
-default_isr_prototype(6); default_isr_prototype(7); default_isr_prototype(8); 
-default_isr_prototype(9); 
+default_isr_prototype(0PU); default_isr_prototype(1PU); default_isr_prototype(2PU); 
+default_isr_prototype(3PU); default_isr_prototype(4PU); default_isr_prototype(5PU); 
+default_isr_prototype(6PU); default_isr_prototype(7PU); default_isr_prototype(8PU); 
+default_isr_prototype(9PU); 
 
-simStatus_t interruptInit(){
-    #if INTERRUPT_ENTRY_EXIT_LOG == 1
-        __sim_entry("interruptInit()");
-    #endif
+default_isr_prototype(0PD); default_isr_prototype(1PD); default_isr_prototype(2PD); 
+default_isr_prototype(3PD); default_isr_prototype(4PD); default_isr_prototype(5PD); 
+default_isr_prototype(6PD); default_isr_prototype(7PD); default_isr_prototype(8PD); 
+default_isr_prototype(9PD);
 
-    qInit(&queueInterrupt);
-    
-    #if INTERRUPT_ENTRY_EXIT_LOG == 1
-        __sim_exit("interruptInit()");
-    #endif
-    return STATUS_OKE;
-}
-
-void simInterruptExit(){
-    #if INTERRUPT_ENTRY_EXIT_LOG == 1
-        __sim_entry("simInterruptExit()");
-    #endif
-
-    qFree(queueInterrupt);
-
-    #if INTERRUPT_ENTRY_EXIT_LOG == 1
-        __sim_exit("simInterruptExit()");
-    #endif
-}
-
-void loopTrackInterruptService(void* arg){
-    #if INTERRUPT_ENTRY_EXIT_LOG == 1
-        __sim_entry("loopTrackInterruptService()");
-    #endif
-
-    while(simStatus != STATUS_STOPPED){
-        while(!qIsEmpty(queueInterrupt)){
-            uint32_t keysym;
-            qDequeue(queueInterrupt, &keysym, sizeof(keysym));
-            if(SDLK_0 <= keysym && keysym <= SDLK_9){
-                uint32_t i = keysym - SDLK_0;
-                // if(__is_not_null(ptr)
-            }
-        }
-    }
-
-    #if INTERRUPT_ENTRY_EXIT_LOG == 1
-        __sim_exit("loopTrackInterruptService()");
-    #endif
-}
-
-
+/// @Brief Set-up simulation of interrupt 
+simStatus_t     simInterruptInit();
+/// @Brief Enable interrupt 
+simStatus_t     simEnableInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt);
+/// @Brief Attach a custom isr_handler
+simStatus_t     simAttachInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt, simISRFuncPtr_t isr);
+/// @Brief Push an interrupt event to queue, then it will be processed
+simStatus_t     simPushInterruptEvent(uint8_t interruptID, uint8_t typeOfInterrupt);
+/// @Brief Delete queue, ...
+void            simInterruptExit();
+/// @Brief A thread to process all event on queue 
+void            loopTrackInterruptService(void* arg);

@@ -1,4 +1,5 @@
 #include "include/main.h"
+#include <SDL2/SDL_timer.h>
 
 void main_app(){
     __sim_entry("main_app()");
@@ -12,7 +13,9 @@ void main_app(){
             __set_color(BLACK);
         __set_pixel(rand()%SCREEN_H, rand()%SCREEN_W);
         // lineBresenham(rand()%SCREEN_H, rand()%SCREEN_W, rand()%SCREEN_H, rand()%SCREEN_W);
-        __render();
+        // __render();
+        __set_render_req();
+        SDL_Delay(10);
     }
     __sim_exit("main_app()");
 }

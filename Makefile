@@ -10,7 +10,8 @@ LDFLAGS  := -lSDL2 -lSDL2_ttf -lpthread
 SRC      := app.c \
             $(wildcard src/*.c) \
             $(wildcard lib/queue/*.c) \
-            $(wildcard lib/log/*.c)
+            $(wildcard lib/log/*.c) \
+			$(wildcard lib/interrupt/*.c)
 
 OBJ      := $(SRC:.c=.o)
 BIN      := app
