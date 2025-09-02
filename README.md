@@ -6,6 +6,8 @@ This project is made to develop the UI (from scratch). I realize that every time
 
 ## Architecture
 
+To start the simulation, you need to define pseudo hardware API (including GPIO control, screen control, interrupt, ...). Because of the limit of technical, i can not simulation interrupt same as real-life (the way CPU work); I can only provide the `negInterruptRegister` and `posInterruptRegister` to help you know when the interrupt happends. 
+
 ```
     +------------------------------+
     | CODE IN `src` (to be sim)    |
