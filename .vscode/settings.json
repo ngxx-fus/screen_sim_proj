@@ -23,6 +23,8 @@
         "algorithm": "c",
         "random": "c",
         "limits": "c",
-        "numeric": "c"
+        "numeric": "c",
+        "log.h": "c",
+        "cstdint": "c"
     }
 }

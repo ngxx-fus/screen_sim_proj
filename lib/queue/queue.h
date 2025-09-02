@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "../log/log.h"
+
+#define QUEUE_ENTRY_EXIT_LOG 1
 
 #ifndef __is_null
     #define __is_null(ptr)  ((ptr) == NULL)
@@ -53,6 +56,6 @@ void qPop(Queue_t* q, qData_t* data, qDataSize_t data_size);
 qNode_t* qHead(Queue_t* q);
 qNode_t* qTail(Queue_t* q);
 qSize_t  qSize(Queue_t* q);
+uint8_t isEmpty(Queue_t* q);
 void qFree(Queue_t* q);
-
 #endif

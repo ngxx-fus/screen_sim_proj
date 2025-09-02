@@ -32,4 +32,7 @@
 #define LIGHTGRAY   211,    211,    211,    255
 #define SILVER      192,    192,    192,    255
 
+#define RBGA(r,g,b,a) (r), (g), (b), (a)
+#define HEX2RGB(hex)  ((hex)>>16), (((hex)>>8)&0xFF), ((hex)&0xFF), 255
+
 #endif
