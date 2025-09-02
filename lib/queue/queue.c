@@ -9,14 +9,14 @@
  * @param data_size Size of the data to be copied.
  * @return qNode_t* Pointer to the newly created node, or NULL on failure.
  */
-qNode_t* createNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t data_size){
+qNode_t* qCreateNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t data_size){
     #if QUEUE_ENTRY_EXIT_LOG == 1
-        __sim_entry("createNode(%p, %p, %p, %d)", prev, next, data, data_size);
+        __sim_entry("qCreateNode(%p, %p, %p, %d)", prev, next, data, data_size);
     #endif
     qNode_t* node = (qNode_t*)malloc(sizeof(qNode_t));
     if(__is_null(node)) {
         #if QUEUE_ENTRY_EXIT_LOG == 1
-            __sim_exit("createNode() | Error: node is NULL!");
+            __sim_exit("qCreateNode() | Error: node is NULL!");
         #endif
         return NULL;
     }
@@ -24,7 +24,7 @@ qNode_t* createNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t da
     if(__is_null(node->data_ptr)) {
         free(node);
         #if QUEUE_ENTRY_EXIT_LOG == 1
-            __sim_exit("createNode() | Error: data_ptr is NULL!");
+            __sim_exit("qCreateNode() | Error: data_ptr is NULL!");
         #endif
         return NULL;
     }
@@ -33,7 +33,7 @@ qNode_t* createNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t da
     node->prev      = prev;
     if(data) memcpy(node->data_ptr, data, data_size);
     #if QUEUE_ENTRY_EXIT_LOG == 1
-        __sim_exit("createNode() | Success!");
+        __sim_exit("qCreateNode() | Success!");
     #endif
     return node;
 }
@@ -45,27 +45,41 @@ qNode_t* createNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t da
  * @param data_size Size of the data for the new node.
  * @return qNode_t* Pointer to the newly created node, or NULL on failure.
  */
-qNode_t* appendNode(qNode_t* currNode, qData_t* data, qDataSize_t data_size){
+qNode_t* qAppendNode(qNode_t* currNode, qData_t* data, qDataSize_t data_size){
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_entry("qAppendNode(%p, %p, %d)", currNode, data, data_size);
+    #endif
     /// NULL
-    if(__is_null(currNode)) return NULL;
+    if(__is_null(currNode)) goto __QAPPENDNODE_NULL_RETURN;
     /// TAIL
     if(__is_null(currNode->next)){
-        qNode_t* newNode = createNode(currNode, NULL, data, data_size);
+        qNode_t* newNode = qCreateNode(currNode, NULL, data, data_size);
         if(newNode){
             currNode->next = newNode;
+            #if QUEUE_ENTRY_EXIT_LOG == 1
+                __sim_exit("qAppendNode(...) ---> %p", newNode);
+            #endif
             return newNode;
         }else{
-            return NULL;
+            goto __QAPPENDNODE_NULL_RETURN;
         }
     }
     /// MID
     qNode_t* nextNode = currNode->next;
-    qNode_t* newNode  = createNode(currNode, nextNode, data, data_size);
+    qNode_t* newNode  = qCreateNode(currNode, nextNode, data, data_size);
     if(newNode){
         currNode->next = newNode;
         nextNode->prev = newNode;
+        #if QUEUE_ENTRY_EXIT_LOG == 1
+            __sim_exit("qAppendNode(...) ---> %p", newNode);
+        #endif
         return newNode;
     }
+
+    __QAPPENDNODE_NULL_RETURN:
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_exit("qAppendNode(...) ---> NULL");
+    #endif
     return NULL;
 }
 
@@ -74,6 +88,9 @@ qNode_t* appendNode(qNode_t* currNode, qData_t* data, qDataSize_t data_size){
  * * @param qPtr Double pointer to the queue object to be initialized.
  */
 void qInit(Queue_t** qPtr){
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_entry("qInit(%p)", qPtr);
+    #endif
     if (__is_null(qPtr)){
         fprintf(stderr, "[qInit] <qPtr> is NULL!\n");
         return;
@@ -82,6 +99,9 @@ void qInit(Queue_t** qPtr){
     (*qPtr)->head = NULL;
     (*qPtr)->tail = NULL;
     (*qPtr)->size = 0;
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_exit("qInit(...)");
+    #endif
 }
 
 /**
@@ -91,15 +111,26 @@ void qInit(Queue_t** qPtr){
  * @param data_size Size of the data.
  */
 void qPush(Queue_t* q, qData_t* data, qDataSize_t data_size){
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_entry("qPush(%p, %p, %d)", q, data, data_size);
+    #endif
     qNode_t* newNode;
     if (__is_null(q->head)) {
-        newNode = createNode(NULL, NULL, data, data_size);
+        newNode = qCreateNode(NULL, NULL, data, data_size);
         if(newNode) q->head = q->tail = newNode;
     } else {
-        newNode = appendNode(q->tail, data, data_size);
+        newNode = qAppendNode(q->tail, data, data_size);
         if(newNode) q->tail = newNode;
     }
     if(newNode) q->size++;
+    #if QUEUE_MAX_SIZE_BOUND == 1
+        if(q->size > QUEUE_MAX_SIZE_LIMIT){
+            qDequeue(q, NULL, 0);
+        }
+    #endif    
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_exit("qPush(...)");
+    #endif
 }
 
 /**
@@ -109,7 +140,15 @@ void qPush(Queue_t* q, qData_t* data, qDataSize_t data_size){
  * @param data_size Size of the data.
  */
 void qEnqueue(Queue_t* q, qData_t* data, qDataSize_t data_size){
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_entry("qEnqueue(%p, %p, %d)", q, data, data_size);
+    #endif
+
     qPush(q, data, data_size);
+
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_exit("qEnqueue(...)");
+    #endif
 }
 
 /**
@@ -119,9 +158,12 @@ void qEnqueue(Queue_t* q, qData_t* data, qDataSize_t data_size){
  * @param data_size Size of the data buffer.
  */
 void qDequeue(Queue_t* q, qData_t* data, qDataSize_t data_size){
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_entry("qDequeue(%p, %p, %d)", q, data, data_size);
+    #endif
     if(__is_null(q) || __is_null(q->head)) {
         fprintf(stderr, "[qDequeue] Queue underflow!\n");
-        return;
+        goto __QDEQUEUE_RETURN_SECTION;
     }
     qNode_t* currHead = q->head;
     if(currHead->data_ptr) 
@@ -136,7 +178,11 @@ void qDequeue(Queue_t* q, qData_t* data, qDataSize_t data_size){
     q->size--;
     free(currHead->data_ptr);
     free(currHead);
-    return;
+
+    __QDEQUEUE_RETURN_SECTION:
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_exit("qDequeue()");
+    #endif
 }
 
 /**
@@ -209,7 +255,7 @@ void qFree(Queue_t* q) {
 }
 
 
-uint8_t isEmpty(Queue_t* q){
+uint8_t qIsEmpty(Queue_t* q){
     if(
         __is_null(q) ||
         __is_null(q->head) ||

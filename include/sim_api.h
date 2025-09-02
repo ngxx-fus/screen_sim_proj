@@ -22,9 +22,9 @@ void __set_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A){
                 (uint32_t)(R), (uint32_t)(G), (uint32_t)(B), (uint32_t)(A));
     #endif
 
-    __entry_critial_section();
+    __entry_SDL_critical_section();
     SDL_SetRenderDrawColor(gRenderer, R, G, B, A);
-    __exit_critial_section();
+    __exit_SDL_critical_section();
 
     #ifdef LOG_SET_COLOR
         __sim_exit("__set_color(...)");
@@ -35,7 +35,7 @@ void __set_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A){
 /// @param x X-coordinate
 /// @param y Y-coordinate
 /// @return STATUS_OKE on success, STATUS_RANGE_ERROR if out of range.
-return_t __set_pixel(sim_size_t x, sim_size_t y) {
+simStatus_t __set_pixel(simSize_t x, simSize_t y) {
     #ifdef LOG_SET_PIXEL
         __sim_entry("__set_pixel(x=%d, y=%d)", (uint32_t)(x), (uint32_t)(y));
     #endif
@@ -44,9 +44,9 @@ return_t __set_pixel(sim_size_t x, sim_size_t y) {
         __sim_log("Range error! | x=%d | y=%d", (int)(x), (int)(y));
         return STATUS_RANGE_ERROR;
     }
-    __entry_critial_section();
-    return_t res = SDL_RenderDrawPoint(gRenderer, y, x);
-    __exit_critial_section();
+    __entry_SDL_critical_section();
+    simStatus_t res = SDL_RenderDrawPoint(gRenderer, y, x);
+    __exit_SDL_critical_section();
 
     #ifdef LOG_SET_PIXEL
         __sim_exit("__set_pixel()");
@@ -57,19 +57,19 @@ return_t __set_pixel(sim_size_t x, sim_size_t y) {
 /// @brief Flush the current rendering buffer to the screen.
 /// Adds a delay before presenting to control framerate.
 /// @return STATUS_OKE on success.
-return_t __render(){
+simStatus_t __render(){
     #ifdef log_set_pixel
         __sim_entry("__render()");
     #endif
     
-    // struct timespec ts;
-    // ts.tv_sec  = (DELAY_BEFORE_FLUSH_MS) / 1000;
-    // ts.tv_nsec = DELAY_BEFORE_FLUSH_NS + (DELAY_BEFORE_FLUSH_MS%1000) * 1000000ULL;
-    // nanosleep(&ts, NULL);   
-    // __entry_critial_section(); 
+    struct timespec ts;
+    ts.tv_sec  = (DELAY_BEFORE_FLUSH_MS) / 1000;
+    ts.tv_nsec = DELAY_BEFORE_FLUSH_NS + (DELAY_BEFORE_FLUSH_MS%1000) * 1000000ULL;
+    nanosleep(&ts, NULL);   
+    // __entry_SDL_critical_section(); 
     // SDL_RenderPresent(gRenderer);
     simFlag |= __mask32(FLAG_RENDER_REQ);
-    // __exit_critial_section();
+    // __exit_SDL_critical_section();
     
     #ifdef LOG_SET_PIXEL
         __sim_exit("__render()");
@@ -84,10 +84,10 @@ return_t __render(){
 /// @param y2 Ending Y
 #define __draw_line(x1,y1,x2,y2) \
         do { \
-            __entry_critial_section(); \
+            __entry_SDL_critical_section(); \
             SDL_RenderDrawLine(gRenderer, x1, y1, x2, y2); \
-            __exit_critial_section(); \
-        } while(0)
+            __exit_SDL_critical_section(); \
+        } while(FALSE)
 
 /// @brief Draw a rectangle outline.
 /// @param x Top-left X
@@ -97,10 +97,10 @@ return_t __render(){
 #define __draw_rect(x,y,w,h) \
         do { \
             SDL_Rect r = {x,y,w,h}; \
-            __entry_critial_section(); \
+            __entry_SDL_critical_section(); \
             SDL_RenderDrawRect(gRenderer,&r); \
-            __exit_critial_section(); \
-        } while(0)
+            __exit_SDL_critical_section(); \
+        } while(FALSE)
 
 /// @brief Draw a filled rectangle.
 /// @param x Top-left X
@@ -110,10 +110,10 @@ return_t __render(){
 #define __fill_rect(x,y,w,h) \
         do { \
             SDL_Rect r = {x,y,w,h}; \
-            __entry_critial_section(); \
+            __entry_SDL_critical_section(); \
             SDL_RenderFillRect(gRenderer,&r); \
-            __exit_critial_section(); \
-        } while(0)
+            __exit_SDL_critical_section(); \
+        } while(FALSE)
 
 /// @brief Delay execution for a given number of milliseconds.
 /// @param D Time in milliseconds

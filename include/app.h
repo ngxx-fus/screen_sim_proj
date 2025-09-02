@@ -5,16 +5,18 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_scancode.h>
 #include <SDL2/SDL_timer.h>
+#include "../lib/interrupt/interrupt.h"
 
-void     queue_init(){
-    __sim_entry("queue_init()");
+simStatus_t simQueueInit(){
+    __sim_entry("simQueueInit()");
     qInit(&toMainThrQueue);
     qInit(&toAppThrQueue);
     qInit(&keyboardEventQueue);
     __sim_entry("queue_exit()");
+    return STATUS_OKE;
 }
 
-void     queue_exit(){
+void     simQueueExit(){
     __sim_entry("queue_exit()");
     qFree(toMainThrQueue);
     qFree(toAppThrQueue);
@@ -22,7 +24,7 @@ void     queue_exit(){
     __sim_exit("queue_exit()");
 }
 
-return_t font_init(){
+simStatus_t font_init(){
     __sim_entry("font_init()");
     if (TTF_Init() < 0) {
         printf("[font_init] TTF_Init failed: %s\n", TTF_GetError());
@@ -37,17 +39,17 @@ return_t font_init(){
     return STATUS_OKE;
 }
 
-void     font_exit() {
-    __sim_entry("font_exit()");
+void     simFontExit() {
+    __sim_entry("simFontExit()");
     if (font) {
         TTF_CloseFont(font);
         font = NULL;
     }
     TTF_Quit();
-    __sim_exit("font_exit()");
+    __sim_exit("simFontExit()");
 }
 
-return_t screen_init(){
+simStatus_t screen_init(){
     __sim_entry("screen_init()");
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("[screen_init] SDL_Init failed: %s\n", SDL_GetError());
@@ -69,12 +71,12 @@ return_t screen_init(){
     return STATUS_OKE;
 }
 
-void     screen_exit(){
-    __sim_entry("screen_exit()");
+void     simScreenExit(){
+    __sim_entry("simScreenExit()");
     SDL_DestroyRenderer(gRenderer);
     SDL_DestroyWindow(gWindow);
     SDL_Quit();
-    __sim_exit("screen_exit()");
+    __sim_exit("simScreenExit()");
 }
 
 int      input_thread(void *arg) {
@@ -188,7 +190,7 @@ void     intro(){
     SDL_RenderCopy(gRenderer, gTexture, NULL, &dstRect);
     SDL_RenderPresent(gRenderer);
     
-    while(1){
+    while(TRUE){
         if(simFlag & __mask32(FLAG_CONTINUE)) {
             simFlag &= __inv_mask32(FLAG_CONTINUE);
             __sim_log("Continue!");

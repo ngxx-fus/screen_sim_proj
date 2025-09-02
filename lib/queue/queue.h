@@ -7,7 +7,17 @@
 #include <stdbool.h>
 #include "../log/log.h"
 
+#ifndef TRUE_FALSE
+    #define TRUE 0x1
+    #define FALSE 0x0
+#endif
+
 #define QUEUE_ENTRY_EXIT_LOG 1
+#define QUEUE_MAX_SIZE_BOUND 1
+
+#if QUEUE_MAX_SIZE_BOUND == 1
+    #define QUEUE_MAX_SIZE_LIMIT 256 
+#endif
 
 #ifndef __is_null
     #define __is_null(ptr)  ((ptr) == NULL)
@@ -46,8 +56,8 @@ typedef struct Queue_t{
     qSize_t size;
 } Queue_t;
 
-qNode_t* createNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t data_size);
-qNode_t* appendNode(qNode_t* currNode, qData_t* data, qDataSize_t data_size);
+qNode_t* qCreateNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t data_size);
+qNode_t* qAppendNode(qNode_t* currNode, qData_t* data, qDataSize_t data_size);
 void qInit(Queue_t** qPtr);
 void qPush(Queue_t* q, qData_t* data, qDataSize_t data_size);
 void qEnqueue(Queue_t* q, qData_t* data, qDataSize_t data_size);
@@ -56,6 +66,6 @@ void qPop(Queue_t* q, qData_t* data, qDataSize_t data_size);
 qNode_t* qHead(Queue_t* q);
 qNode_t* qTail(Queue_t* q);
 qSize_t  qSize(Queue_t* q);
-uint8_t isEmpty(Queue_t* q);
+uint8_t  qIsEmpty(Queue_t* q);
 void qFree(Queue_t* q);
 #endif

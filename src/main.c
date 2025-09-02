@@ -11,7 +11,7 @@ void main_app(){
         else
             __set_color(BLACK);
         __set_pixel(rand()%SCREEN_H, rand()%SCREEN_W);
-        lineBresenham(rand()%SCREEN_H, rand()%SCREEN_W, rand()%SCREEN_H, rand()%SCREEN_W);
+        // lineBresenham(rand()%SCREEN_H, rand()%SCREEN_W, rand()%SCREEN_H, rand()%SCREEN_W);
         __render();
     }
     __sim_exit("main_app()");
