@@ -61,4 +61,47 @@ To start the simulation, you need to define pseudo hardware API (including GPIO 
 
 
 
+# Collection
 
+## Enum
+
+- Name for enum: LIB+CATALOG+PROPERTY (E.g: INT_STATUS_OK (interrupt/status/OK)
+- Enum make the code is more readable, keep the flow is clear!
+
+## Functions
+
+- Declare a pointer function `f` : `void (*f)(void)`  
+- To call a pointer function: `f()` - implicit dereference or `(*f)()` - explicit dereference
+- `typedef void (*simISRFuncPtr_t)(void);` : Define a void (*...)(void) type (a pointer to a function that take no arg and return nothing)
+- If a function can be referenced by an address like a variable, the address can be stored in an array! E.g: `void (*f[23])(void)` - `f` is a function pointer array with the size is 23.
+- Assign a slot `f[3] = foo` (which foo: `void foo(){ printf"Hello, I'm foo!");}`)
+- Call a slot inside `f` : `f[3]()` or `*(f+3)()` or `(*(*(f+3)))()`
+
+## log
+
+- Wrap arround the printf,
+- Using __VAR_ARGS__ (in  `stdarg.h` ) to pass unknown size angs
+- The core log function: `void __sim_coreLog(const char* tag, const char* format, ...) __attribute__((format(printf, 2, 3)));`
+- The `__attribute__((format(printf, 2, 3)))` tells the compiler that check 2nd-arg (format) and args (...) same as printf. (It will give the warning of you pass format as a integer).
+- Use `va_start(<va_list>, the last fixed arg)` to collect all args from `...`
+
+The full definition of __sim_coreLog:
+```C
+    void __sim_coreLog(const char* tag, const char* format, ...) {
+        struct timeval __timeVal;
+        gettimeofday(&__timeVal, NULL);
+
+        struct tm __tmBuf;
+        localtime_r(&__timeVal.tv_sec, &__tmBuf);
+
+        char __buffer[32];
+        strftime(__buffer, sizeof(__buffer), "%H:%M:%S", &__tmBuf);
+
+        va_list args;
+        va_start(args, format);
+        fprintf(stderr, "[%s.%06ld] [%s] ", __buffer, __timeVal.tv_usec, tag);
+        vfprintf(stderr, format, args);
+        fprintf(stderr, "\n");
+        va_end(args);
+    }
+```

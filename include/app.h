@@ -5,7 +5,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_scancode.h>
 #include <SDL2/SDL_timer.h>
-#include "../lib/interrupt/interrupt.h"
+#include "../lib/interrupt/sim_interrupt.h"
 
 simStatus_t simQueueInit(){
     __sim_entry("simQueueInit()");

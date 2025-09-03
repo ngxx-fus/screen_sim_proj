@@ -1,8 +1,11 @@
-#include "interrupt.h"
+#include "sim_interrupt.h"
 
 Queue_t*        queueInterrupt = NULL;
-simIntReg_t     negInterruptRegister    = 0;
-simIntReg_t     posInterruptRegister    = 0;
+simIntReg_t     negInterruptEventRegister = 0; 
+simIntReg_t     posInterruptEventRegister = 0;
+simIntReg_t     negInterruptEnableRegister = 0;
+simIntReg_t     posInterruptEnableRegister = 0;
+
 simISRFuncPtr_t interruptPullDownService[INTTERUPT_COUNT] = {
     isr_func_name(0PD), isr_func_name(1PD), isr_func_name(2PD), 
     isr_func_name(3PD), isr_func_name(4PD), isr_func_name(5PD), 
@@ -37,17 +40,67 @@ simStatus_t interruptInit(){
     #if INTERRUPT_ENTRY_EXIT_LOG == 1
         __sim_exit("interruptInit()");
     #endif
+    return INT_STATUS_OKE;
+}
+
+simStatus_t     simEnableInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt){
+    if(typeOfInterrupt == INT_PULLDOWN){
+        negInterruptEnableRegister |= __mask32(interruptID);
+    }else{
+        posInterruptEnableRegister |= __mask32(interruptID);
+    }
+    return INT_STATUS_OKE;
+}
+
+simStatus_t     simDisableInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt){
+    #if INTERRUPT_ENTRY_EXIT_LOG == 1
+        __sim_entry("simDisableInterrupt(%d, %d)", interruptID, typeOfInterrupt);
+    #endif   
+    if(typeOfInterrupt == INT_PULLDOWN){
+        negInterruptEnableRegister &= __inv_mask32(interruptID);
+    }else{
+        posInterruptEnableRegister &= __inv_mask32(interruptID);
+    }
+    #if INTERRUPT_ENTRY_EXIT_LOG == 1
+        __sim_exit("simDisableInterrupt(...)");
+    #endif   
+    return INT_STATUS_OKE;
+}
+
+simStatus_t     simAttachInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt, simISRFuncPtr_t isr){
+    #if INTERRUPT_ENTRY_EXIT_LOG == 1
+        __sim_entry("simAttachInterrupt(%d, %d, %p)", interruptID, typeOfInterrupt, isr);
+    #endif
+    if(interruptID >= INTTERUPT_COUNT) {
+        __sim_log("interruptID=%d out of range(0, %d)!", interruptID, INTTERUPT_COUNT);
+        return INT_OUT_OF_RANGE;
+    }
+    simEnableInterrupt(interruptID, typeOfInterrupt);
+    if(typeOfInterrupt == INT_PULLDOWN){
+        interruptPullDownService[interruptID] = isr;
+    }else{
+        interruptPullUpService[interruptID] = isr;
+    };
+    #if INTERRUPT_ENTRY_EXIT_LOG == 1
+        __sim_exit("simAttachInterrupt()");
+    #endif
     return STATUS_OKE;
 }
 
-simStatus_t     pushInterruptEvent(SDL_Keycode key){
+simStatus_t     simDetachInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt){
     #if INTERRUPT_ENTRY_EXIT_LOG == 1
-        __sim_entry("pushInterruptEvent(%d)", key);
+        __sim_entry("simDetachInterrupt(%d, %d)", interruptID, typeOfInterrupt);
     #endif
-    if(SDLK_0 <= key && key <= SDLK_9){
-        
-    } 
-
+    if(interruptID >= INTTERUPT_COUNT) {
+        __sim_log("interruptID=%d out of range(0, %d)!", interruptID, INTTERUPT_COUNT);
+        return INT_OUT_OF_RANGE;
+    }
+    simDisableInterrupt(interruptID, typeOfInterrupt);
+    if(typeOfInterrupt == INT_PULLDOWN){
+        interruptPullDownService[interruptID] = NULL;
+    }else{
+        interruptPullUpService[interruptID] = NULL;
+    };
     #if INTERRUPT_ENTRY_EXIT_LOG == 1
         __sim_exit("pushInterruptEvent()");
     #endif

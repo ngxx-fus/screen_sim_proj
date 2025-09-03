@@ -42,7 +42,7 @@ int main() {
         return ERROR_UNKNOWN;
     }
 
-    if (interruptInit() != STATUS_OKE)  return ERROR_UNKNOWN;
+    if (simInterruptInit() != STATUS_OKE)  return ERROR_UNKNOWN;
 
     intro();
 
