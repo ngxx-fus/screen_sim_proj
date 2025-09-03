@@ -59,7 +59,9 @@ To start the simulation, you need to define pseudo hardware API (including GPIO 
   When flashing to hardware, this will be replaced by the actual firmware `src/`.  
 - `app/`, `lib/`, and `config/` are designed to be portable across both simulation and real firmware.  
 
+## Flowchart
 
+![flowchart](imgs/image.png)
 
 # Collection
 

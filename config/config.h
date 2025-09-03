@@ -4,8 +4,8 @@
 
 /// DEF ///////////////////////////////////////////////////////////////////////////////////////////
 
-#define SCREEN_W    240
-#define SCREEN_H    172
+#define SCREEN_W    640
+#define SCREEN_H    480
 #define FONT_PATH   "/usr/share/fonts/TTF/DejaVuSans.ttf"
 #define FONT_SIZE   12
 #define RENDER_FPS  100
