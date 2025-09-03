@@ -4,6 +4,7 @@
 /// HEADERS ///////////////////////////////////////////////////////////////////////////////////////
 #include "global.h"
 #include "../lib/log/log.h"
+#include "../lib/interrupt/sim_interrupt.h"
 
 // #define LOG_SET_PIXEL
 // #define LOG_RENDER_PIXEL
@@ -16,7 +17,7 @@
 /// @param G Green channel (0–255)
 /// @param B Blue channel (0–255)
 /// @param A Alpha channel (0–255)
-void __set_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A){
+static void __set_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A){
     #ifdef LOG_SET_COLOR
         __sim_entry("__set_color(r=%d, g=%d, b=%d, a=%d)", 
                 (uint32_t)(R), (uint32_t)(G), (uint32_t)(B), (uint32_t)(A));
@@ -35,7 +36,7 @@ void __set_color(uint8_t R, uint8_t G, uint8_t B, uint8_t A){
 /// @param x X-coordinate
 /// @param y Y-coordinate
 /// @return STATUS_OKE on success, STATUS_RANGE_ERROR if out of range.
-simStatus_t __set_pixel(simSize_t x, simSize_t y) {
+static simStatus_t __set_pixel(simSize_t x, simSize_t y) {
     #ifdef LOG_SET_PIXEL
         __sim_entry("__set_pixel(x=%d, y=%d)", (uint32_t)(x), (uint32_t)(y));
     #endif
@@ -54,22 +55,30 @@ simStatus_t __set_pixel(simSize_t x, simSize_t y) {
     return res;
 }
 
+#define __render_request() do{              \
+    SDL_Event event;                        \
+    SDL_memset(&event, 0, sizeof(event));   \
+    event.type = SDL_USEREVENT;             \
+    event.user.code = REQ_SCR_RENDER;       \
+    event.user.data1 = NULL;                \
+    event.user.data2 = NULL;                \
+    SDL_PushEvent(&event);                  \
+}while(FALSE);
+
 /// @brief Flush the current rendering buffer to the screen.
 /// Adds a delay before presenting to control framerate.
 /// @return STATUS_OKE on success.
-simStatus_t __render(){
+static simStatus_t __render(){
     #ifdef log_set_pixel
         __sim_entry("__render()");
     #endif
+    #if defined(DELAY_BEFORE_FLUSH_MS) && DELAY_BEFORE_FLUSH_MS > 0
+        __sim_sleep_ms(DELAY_BEFORE_FLUSH_MS);
+    #endif
     
-    struct timespec ts;
-    ts.tv_sec  = (DELAY_BEFORE_FLUSH_MS) / 1000;
-    ts.tv_nsec = DELAY_BEFORE_FLUSH_NS + (DELAY_BEFORE_FLUSH_MS%1000) * 1000000ULL;
-    nanosleep(&ts, NULL);   
-    // __entry_SDL_critical_section(); 
-    // SDL_RenderPresent(gRenderer);
+    __entry_critical_section(&simFlagLock); 
     simFlag |= __mask32(FLAG_RENDER_REQ);
-    // __exit_SDL_critical_section();
+    __exit_critical_section(&simFlagLock);
     
     #ifdef LOG_SET_PIXEL
         __sim_exit("__render()");

@@ -7,7 +7,7 @@
 #include <SDL2/SDL_timer.h>
 #include "../lib/interrupt/sim_interrupt.h"
 
-simStatus_t simQueueInit(){
+static simStatus_t simQueueInit(){
     __sim_entry("simQueueInit()");
     qInit(&toMainThrQueue);
     qInit(&toAppThrQueue);
@@ -16,7 +16,7 @@ simStatus_t simQueueInit(){
     return STATUS_OKE;
 }
 
-void     simQueueExit(){
+static void     simQueueExit(){
     __sim_entry("queue_exit()");
     qFree(toMainThrQueue);
     qFree(toAppThrQueue);
@@ -24,7 +24,7 @@ void     simQueueExit(){
     __sim_exit("queue_exit()");
 }
 
-simStatus_t font_init(){
+static simStatus_t font_init(){
     __sim_entry("font_init()");
     if (TTF_Init() < 0) {
         printf("[font_init] TTF_Init failed: %s\n", TTF_GetError());
@@ -39,7 +39,7 @@ simStatus_t font_init(){
     return STATUS_OKE;
 }
 
-void     simFontExit() {
+static void     simFontExit() {
     __sim_entry("simFontExit()");
     if (font) {
         TTF_CloseFont(font);
@@ -49,7 +49,7 @@ void     simFontExit() {
     __sim_exit("simFontExit()");
 }
 
-simStatus_t screen_init(){
+static simStatus_t screen_init(){
     __sim_entry("screen_init()");
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("[screen_init] SDL_Init failed: %s\n", SDL_GetError());
@@ -71,7 +71,7 @@ simStatus_t screen_init(){
     return STATUS_OKE;
 }
 
-void     simScreenExit(){
+static void     simScreenExit(){
     __sim_entry("simScreenExit()");
     SDL_DestroyRenderer(gRenderer);
     SDL_DestroyWindow(gWindow);
@@ -79,7 +79,7 @@ void     simScreenExit(){
     __sim_exit("simScreenExit()");
 }
 
-int      input_thread(void *arg) {
+static int      input_thread(void *arg) {
     __sim_entry("input_thread()");
     SDL_Event e;
     while(simStatus != STATUS_STOPPED){
@@ -100,18 +100,14 @@ int      input_thread(void *arg) {
                         simFlag |= __mask8(FLAG_CONTINUE);
                     }else if(SDLK_0 <= e.key.keysym.sym && e.key.keysym.sym <= SDLK_9){
                         uint8_t i = e.key.keysym.sym - SDLK_0;
-                        negInterruptRegister |= __mask32(i);
-                        posInterruptRegister &= __inv_mask32(i);
-                        __sim_log("Interrupt: (negEdge) 0x%02x", negInterruptRegister);
+                        simPushInterruptEvent(i, INT_PULLDOWN);
                     }
                     
                     break;
                 case SDL_KEYUP:
                     if(SDLK_0 <= e.key.keysym.sym && e.key.keysym.sym <= SDLK_9){
                         uint8_t i = e.key.keysym.sym - SDLK_0;
-                        negInterruptRegister &= __inv_mask32(i);
-                        posInterruptRegister |= __mask32(i);
-                        __sim_log("Interrupt: (posEdge) 0x%02x", posInterruptRegister);
+                        simPushInterruptEvent(i, INT_PULLUP);
                     }else{
                         if(e.key.keysym.sym == SDLK_c){
                             simFlag &= __inv_mask32(FLAG_CONTINUE);
@@ -156,7 +152,7 @@ void     main_app(){
     SDL_RenderPresent(gRenderer);
 }
 
-void     intro(){
+static void     intro(){
     __sim_entry("intro()");
     char buffer[265];
     snprintf(

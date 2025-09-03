@@ -31,33 +31,72 @@ extern Queue_t          *keyboardEventQueue;    /// Queue for keyboard input eve
 extern pthread_mutex_t  SDLLock;                /// Mutex lock for SDL operations (thread-safety)
 extern pthread_mutex_t  simFlagLock;            /// Mutex lock for simulation flags lock
 extern simStatus_t      simStatus;              /// Current simulation status
-extern simIntReg_t      negInterruptRegister;   /// Interrupt resgister
-extern simIntReg_t      posInterruptRegister;   /// Interrupt resgister
+// extern simIntReg_t      negInterruptRegister;   /// Interrupt resgister
+// extern simIntReg_t      posInterruptRegister;   /// Interrupt resgister
 extern simFlag_t        simFlag;                /// Software (System) flag
 
-#ifndef __entry_critical_section
-    /// @brief Enter a critical section (blocking until lock acquired)
-    #define __entry_critical_section(mutex)         pthread_mutex_lock(mutex)
-#endif
-#ifndef __try_entry_critical_section
-    /// @brief Try to enter a critical section (non-blocking, returns 0 if success)
-    #define __try_entry_critical_section(mutex)      pthread_mutex_trylock(mutex)
-#endif
-#ifndef __exit_critical_section
-    /// @brief Exit a critical section (release lock)
-    #define __exit_critical_section(mutex)           pthread_mutex_unlock(mutex)
-#endif
+#ifndef __entry_exit_critical_section
+#define __entry_exit_critical_section
+    static inline void __entry_critical_section(pthread_mutex_t* mutex) {
+        int rc = pthread_mutex_lock(mutex);
+        if (rc) {
+            fprintf(stderr, "Mutex lock failed: %d\n", rc);
+        }
+    }
+
+    static inline void __exit_critical_section(pthread_mutex_t* mutex) {
+        int rc = pthread_mutex_unlock(mutex);
+        if (rc) {
+            fprintf(stderr, "Mutex unlock failed: %d\n", rc);
+        }
+    }
+#endif 
 
 /// @brief Enter SDL critical section (blocking until lock acquired)
-#define __entry_SDL_critical_section()          pthread_mutex_lock(&SDLLock)
+// #define __entry_SDL_critical_section()          pthread_mutex_lock(&SDLLock)
 /// @brief Try to enter SDL critical section (non-blocking, returns 0 if success)
-#define __try_entry_SDL_critical_section()      pthread_mutex_trylock(&SDLLock)
+// #define __try_entry_SDL_critical_section()      pthread_mutex_trylock(&SDLLock)
 /// @brief Exit SDL critical section (release lock)
-#define __exit_SDL_critical_section()           pthread_mutex_unlock(&SDLLock)
+// #define __exit_SDL_critical_section()           pthread_mutex_unlock(&SDLLock)
+
+/// @brief Enter SDL critical section (blocking until lock acquired)
+#define __entry_SDL_critical_section() do {                                \
+    int __rc = pthread_mutex_lock(&SDLLock);                               \
+    if (__rc != 0) {                                                       \
+        __sim_log("[SDL_CRIT] pthread_mutex_lock failed (rc=%d, %s)",      \
+                  __rc, strerror(__rc));                                   \
+    }                                                                      \
+} while(0)
+
+/// @brief Try to enter SDL critical section (non-blocking, returns 0 if success)
+#define __try_entry_SDL_critical_section() ({                              \
+    int __rc = pthread_mutex_trylock(&SDLLock);                            \
+    if (__rc != 0 && __rc != EBUSY) {                                      \
+        __sim_log("[SDL_CRIT] pthread_mutex_trylock failed (rc=%d, %s)",   \
+                  __rc, strerror(__rc));                                   \
+    }                                                                      \
+    __rc;                                                                  \
+})
+
+/// @brief Exit SDL critical section (release lock)
+#define __exit_SDL_critical_section() do {                                 \
+    int __rc = pthread_mutex_unlock(&SDLLock);                             \
+    if (__rc != 0) {                                                       \
+        __sim_log("[SDL_CRIT] pthread_mutex_unlock failed (rc=%d, %s)",    \
+                  __rc, strerror(__rc));                                   \
+    }                                                                      \
+} while(0)
+
+typedef int (*simPThreadFunc)(void*);
 
 /// DEBUG SETUP ///////////////////////////////////////////////////////////////////////////////////
 
 #include "../lib/log/log.h"
+
+
+#define __USEC(i)  i##000ULL                    /// Convert from microsecond to nanosecond 
+#define __MSEC(i)  i##000000ULL                 /// Convert from millisecond to nanosecond
+#define __SEC(i)   i##000000000ULL              /// Convert from second to nanosecond
 
 /// @brief Sleep for a given number of milliseconds (please give input as integer)
 #define __sim_sleep_ms(ms) do {                   \
@@ -66,6 +105,14 @@ extern simFlag_t        simFlag;                /// Software (System) flag
     ts.tv_nsec = ((ms) % 1000) * 1000000L;        \
     nanosleep(&ts, NULL);                         \
 } while(FALSE)
+
+/// @brief Sleep for a given number of nanoseconds (input must be integer)
+#define __sim_sleep_ns(ns) do {                         \
+    struct timespec ts;                                 \
+    ts.tv_sec  = (time_t)((ns) / 1000000000UL);         \
+    ts.tv_nsec = (long)((ns) % 1000000000UL);           \
+    nanosleep(&ts, NULL);                               \
+} while(0)
 
 /// @brief Sleep for a given number of microseconds (please give input as integer)
 #define __sim_sleep_us(us) do {                   \
@@ -108,6 +155,21 @@ extern simFlag_t        simFlag;                /// Software (System) flag
     SDL_RenderPresent(gRenderer); \
     __exit_critical_section(&simFlagLock);  \
 }while(FALSE);
+
+/// REQ EVENT /////////////////////////////////////////////////////////////////////////////////////
+
+enum REQ_CODE{
+    REQ_SIM_EXIT        = 0x0,
+    REQ_SCR_RENDER      = 0x1,
+};
+
+// static void simSendRenderEvent(){
+//     SDL_Event event;
+//     SDL_memset(&event, 0, sizeof(event)); // safe initialization
+//     event.type = SDL_USEREVENT;
+//     event.user.code = REQ_SCR_RENDER;
+//     SDL_PushEvent(&event);
+// }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #endif

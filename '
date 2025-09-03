@@ -65,40 +65,34 @@ int main() {
         return ERROR_UNKNOWN;
     }
 
-    while (simStatus == STATUS_RUNNING) {
-        // __entry_critical_section(&simFlagLock);
-        if(simFlag & __mask32(FLAG_RENDER_REQ)){
-            // __sim_log("Got render request!");
-            __entry_SDL_critical_section();
-            SDL_RenderPresent(gRenderer);
-            __exit_SDL_critical_section();
-            simFlag &= __inv_mask32(FLAG_RENDER_REQ);
+//     while (simStatus == STATUS_RUNNING) {
+//         __entry_critical_section(&simFlagLock);
+//         if(simFlag & __mask32(FLAG_RENDER_REQ)){
+//             __entry_SDL_critical_section();
+//             SDL_RenderPresent(gRenderer);
+//             __exit_SDL_critical_section();
+//             simFlag &= __inv_mask32(FLAG_RENDER_REQ);
+//         }
+//         __exit_critical_section(&simFlagLock);
+//         SDL_Delay(15);
+//     }
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        __sim_sleep_us(__MSEC(1000));
+        __sim_log("Got render request!");
+        if (event.type == SDL_USEREVENT) {
+            switch (event.user.code) {
+                case REQ_SCR_RENDER:
+                    SDL_RenderPresent(gRenderer);
+                    break;
+                case REQ_SIM_EXIT:
+                    break;
+            }
         }
-        // __exit_critical_section(&simFlagLock);
-        // SDL_Delay(15);
-        #if defined(RENDER_FPS) && RENDER_FPS > 0 
-            __sim_sleep_ms(1000/RENDER_FPS);
-        #else
-            __sim_sleep_ns(__MSEC(50));
-        #endif
+        if(simStatus == STATUS_STOPPED) break;
     }
 
-//     SDL_Event event;
-//     while (SDL_PollEvent(&event)) {
-//         __sim_sleep_us(__MSEC(1000));
-//         __sim_log("Got render request!");
-//         if (event.type == SDL_USEREVENT) {
-//             switch (event.user.code) {
-//                 case REQ_SCR_RENDER:
-//                     SDL_RenderPresent(gRenderer);
-//                     break;
-//                 case REQ_SIM_EXIT:
-//                     break;
-//             }
-//         }
-//         if(simStatus == STATUS_STOPPED) break;
-//     }
-// 
     __sim_exit("main()");
     return 0;
 }

@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#define LOG_INTERRUPT_EVENT         0
 #define INTERRUPT_ENTRY_EXIT_LOG    0
 #define INTTERUPT_COUNT             10
 #define ISR_FUNC(i)                 ISR_FUNC_PTR(i)()
@@ -13,18 +14,23 @@
 #define CLR_ISR_FUNC(i)             ISR_FUNC_PTR(i) = NULL
 #define SET_ISR_FUNC(i, isr)        ISR_FUNC_PTR(i) = (isr)
 
-typedef void (*simISRFuncPtr_t)(void); 
+typedef void (*simISRFuncPtr_t)(void);
+
+typedef uint8_t interruptID_t;
+typedef uint8_t interruptType_t;
+
 enum INTERRUPT_TYPE_OF_INTERRUPT {
     INT_PULLDOWN     = 0,
     INT_PULLUP       = 1,
 };
 enum INTERRUPT_RETURN_CODE {
     INT_STATUS_OKE      = 0,
-    INT_OUT_OF_RANGE    = -1
+    INT_OUT_OF_RANGE    = -1,
+    INT_UNKNOWN_TYPE    = -2
 };
 
 extern pthread_mutex_t simInterruptLock;                            /// Mutex lock for interupt
-extern Queue_t*        queueInterrupt;                              /// Queue of interrupt request
+extern Queue_t*        interruptEventQueue;                              /// Queue of interrupt request
 extern simIntReg_t     negInterruptEventRegister;                   /// Flags of neg-edge interrupt event 
 extern simIntReg_t     posInterruptEventRegister;                   /// Flags of pos-edge interrupt event
 extern simIntReg_t     negInterruptEnableRegister;                  /// Flags of neg-edge interrupt enable 
@@ -51,22 +57,24 @@ default_isr_prototype(9PD);
 
 /// @Brief Set-up simulation of interrupt 
 simStatus_t     simInterruptInit();
-/// @Brief Enable interrupt
+/// @Brief Enable interrupt (only call from inside the lib)
 /// @Param interruptID          Specify the specific interrupt (0 -> INTTERUPT_COUNT)
 /// @Param typeOfInterrupt      Specify the type is PULLDOWN or PULLUP 
-simStatus_t     simEnableInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt);
-/// @Brief Disable interrupt
+simStatus_t     simEnableInterrupt(interruptID_t interruptID, interruptType_t typeOfInterrupt);
+/// @Brief Disable interrupt (only call from inside the lib)
 /// @Param interruptID          Specify the specific interrupt (0 -> INTTERUPT_COUNT)
 /// @Param typeOfInterrupt      Specify the type is PULLDOWN or PULLUP 
-simStatus_t     simDisableInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt);
+simStatus_t     simDisableInterrupt(interruptID_t interruptID, interruptType_t typeOfInterrupt);
 /// @Brief Attach a custom isr_handler
 /// @Param interruptID          Specify the specific interrupt (0 -> INTTERUPT_COUNT)
 /// @Param typeOfInterrupt      Specify the type is PULLDOWN or PULLUP 
 /// @Param isr                  Specify a function will be call when interrupt
-simStatus_t     simAttachInterrupt(uint8_t interruptID, uint8_t typeOfInterrupt, simISRFuncPtr_t isr);
-/// @Brief Push an interrupt event to queue, then it will be processed
-simStatus_t     simPushInterruptEvent(uint8_t interruptID, uint8_t typeOfInterrupt);
+simStatus_t     simAttachInterrupt(interruptID_t interruptID, interruptType_t typeOfInterrupt, simISRFuncPtr_t isr);
+/// $Brief Detach the isr, use default_isr_function
+simStatus_t     simDetachInterrupt(interruptID_t interruptID, interruptType_t typeOfInterrupt);
+/// @Brief Push an interrupt event to queue, then it will be processed later
+simStatus_t     simPushInterruptEvent(interruptID_t interruptID, interruptType_t typeOfInterrupt);
 /// @Brief Delete queue, ...
 void            simInterruptExit();
-/// @Brief A thread to process all event on queue 
-void            loopTrackInterruptService(void* arg);
+/// @Brief A thread to process all events on queue 
+int             loopTrackInterruptService(void* arg);

@@ -8,8 +8,9 @@
 #define SCREEN_H    172
 #define FONT_PATH   "/usr/share/fonts/TTF/DejaVuSans.ttf"
 #define FONT_SIZE   12
+#define RENDER_FPS  100
 /// Delay (ms + ns) before flush via <SDL_RenderPresent(gRenderer)>
-#define DELAY_BEFORE_FLUSH_MS 200
+#define DELAY_BEFORE_FLUSH_MS 10
 /// Delay (ms + ns) before flush via <SDL_RenderPresent(gRenderer)>
 #define DELAY_BEFORE_FLUSH_NS 0
 

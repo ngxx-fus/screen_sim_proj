@@ -4,6 +4,29 @@
 
 #define abs(x) (((x)<0)?(x):(-1*(x)))
 
+static void __guess_coreLog(const char* tag, const char* format, ...) {
+    struct timeval __timeVal;
+    gettimeofday(&__timeVal, NULL);
+
+    struct tm __tmBuf;
+    localtime_r(&__timeVal.tv_sec, &__tmBuf);
+
+    char __buffer[32];
+    strftime(__buffer, sizeof(__buffer), "%H:%M:%S", &__tmBuf);
+
+    va_list args;
+    va_start(args, format);
+    printf("[%s.%06ld] [%s] ", __buffer, __timeVal.tv_usec, tag);
+    vfprintf(stdout, format, args);
+    printf("\n"); 
+    fflush(stdout); 
+    va_end(args);
+}
+
+#define __guess_log(...)    __guess_coreLog("guess] [log", __VA_ARGS__) 
+#define __guess_entry(...)  __guess_coreLog("guess] [>>>", __VA_ARGS__)
+#define __guess_exit(...)   __guess_coreLog("guess] [<<<", __VA_ARGS__)
+
 /// @brief 
 /// @param x1 
 /// @param y1 

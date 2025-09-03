@@ -33,7 +33,7 @@ qNode_t* qCreateNode(qNode_t* prev, qNode_t* next,  qData_t* data, qDataSize_t d
     node->prev      = prev;
     if(data) memcpy(node->data_ptr, data, data_size);
     #if QUEUE_ENTRY_EXIT_LOG == 1
-        __sim_exit("qCreateNode() | Success!");
+        __sim_exit("qCreateNode()");
     #endif
     return node;
 }
@@ -57,7 +57,7 @@ qNode_t* qAppendNode(qNode_t* currNode, qData_t* data, qDataSize_t data_size){
         if(newNode){
             currNode->next = newNode;
             #if QUEUE_ENTRY_EXIT_LOG == 1
-                __sim_exit("qAppendNode(...) ---> %p", newNode);
+                __sim_exit("qAppendNode() ---> %p", newNode);
             #endif
             return newNode;
         }else{
@@ -71,14 +71,14 @@ qNode_t* qAppendNode(qNode_t* currNode, qData_t* data, qDataSize_t data_size){
         currNode->next = newNode;
         nextNode->prev = newNode;
         #if QUEUE_ENTRY_EXIT_LOG == 1
-            __sim_exit("qAppendNode(...) ---> %p", newNode);
+            __sim_exit("qAppendNode() ---> %p", newNode);
         #endif
         return newNode;
     }
 
     __QAPPENDNODE_NULL_RETURN:
     #if QUEUE_ENTRY_EXIT_LOG == 1
-        __sim_exit("qAppendNode(...) ---> NULL");
+        __sim_exit("qAppendNode() ---> NULL");
     #endif
     return NULL;
 }
@@ -99,9 +99,53 @@ void qInit(Queue_t** qPtr){
     (*qPtr)->head = NULL;
     (*qPtr)->tail = NULL;
     (*qPtr)->size = 0;
+    (*qPtr)->limited_size = 2048;
+    (*qPtr)->config |= __mask8(QMODE_AUTO_LIMIT);
     #if QUEUE_ENTRY_EXIT_LOG == 1
-        __sim_exit("qInit(...)");
+        __sim_exit("qInit()");
     #endif
+}
+
+void qInitAsStack(Queue_t** qPtr){
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_entry("qInit(%p)", qPtr);
+    #endif
+    if (__is_null(qPtr)){
+        fprintf(stderr, "[qInit] <qPtr> is NULL!\n");
+        return;
+    }
+    (*qPtr) = (Queue_t*) malloc(sizeof(Queue_t));
+    (*qPtr)->head = NULL;
+    (*qPtr)->tail = NULL;
+    (*qPtr)->size = 0;
+    (*qPtr)->limited_size = 2048;
+    (*qPtr)->config |= __mask8(QMODE_AUTO_LIMIT);
+    (*qPtr)->config |= __mask8(QMODE_QUEUE_STACK);
+    #if QUEUE_ENTRY_EXIT_LOG == 1
+        __sim_exit("qInit()");
+    #endif
+}
+
+/// @brief Limit the queue as configured!
+void limitQueue(Queue_t *q){
+    if((q->config & __mask8(QMODE_AUTO_LIMIT)) == 0) return;
+    if(q->limited_size < 1) return;
+    if((q->size) >= (q->limited_size)){
+        #if LOG_OUT_OF_SIZE == 1
+            __sim_log("[limited_size] Out of size (%d/%d)!", q->size, q->limited_size);
+        #endif
+        if((q->config & __mask8(QMODE_QUEUE_STACK)) == MODE_QUEUE){
+            qDequeue(q, NULL, 0);
+            #if LOG_OUT_OF_SIZE == 1
+                __sim_log("[limited_size] Auto removed HEAD (%d/%d)!", q->size, q->limited_size);
+            #endif
+        }else{
+            qPop(q, NULL, 0);
+            #if LOG_OUT_OF_SIZE == 1
+                __sim_log("[limited_size] Auto removed HEAD (%d/%d)!", q->size, q->limited_size);
+            #endif
+        }
+    }    
 }
 
 /**
@@ -123,13 +167,11 @@ void qPush(Queue_t* q, qData_t* data, qDataSize_t data_size){
         if(newNode) q->tail = newNode;
     }
     if(newNode) q->size++;
-    #if QUEUE_MAX_SIZE_BOUND == 1
-        if(q->size > QUEUE_MAX_SIZE_LIMIT){
-            qDequeue(q, NULL, 0);
-        }
-    #endif    
+    
+    limitQueue(q);
+
     #if QUEUE_ENTRY_EXIT_LOG == 1
-        __sim_exit("qPush(...)");
+        __sim_exit("qPush()");
     #endif
 }
 
@@ -147,7 +189,7 @@ void qEnqueue(Queue_t* q, qData_t* data, qDataSize_t data_size){
     qPush(q, data, data_size);
 
     #if QUEUE_ENTRY_EXIT_LOG == 1
-        __sim_exit("qEnqueue(...)");
+        __sim_exit("qEnqueue()");
     #endif
 }
 
@@ -254,7 +296,6 @@ void qFree(Queue_t* q) {
     free(q);
 }
 
-
 uint8_t qIsEmpty(Queue_t* q){
     if(
         __is_null(q) ||
@@ -263,4 +304,8 @@ uint8_t qIsEmpty(Queue_t* q){
         q->size == 0
     ) return 1;
     return 0;
+}
+
+void qConfig(Queue_t* q, qConfig_t newConfig){
+    q->config = newConfig;
 }
