@@ -79,11 +79,11 @@ To start the simulation, you need to define pseudo hardware API (including GPIO 
 
 ## log
 
-- Wrap arround the printf,
 - Using __VAR_ARGS__ (in  `stdarg.h` ) to pass unknown size angs
 - The core log function: `void __sim_coreLog(const char* tag, const char* format, ...) __attribute__((format(printf, 2, 3)));`
 - The `__attribute__((format(printf, 2, 3)))` tells the compiler that check 2nd-arg (format) and args (...) same as printf. (It will give the warning of you pass format as a integer).
 - Use `va_start(<va_list>, the last fixed arg)` to collect all args from `...`
+- Use `stderr` to log, it not conflic with `stdout` (normal printf) 
 
 The full definition of __sim_coreLog:
 ```C
