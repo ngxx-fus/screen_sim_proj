@@ -61,7 +61,13 @@ To start the simulation, you need to define pseudo hardware API (including GPIO 
 
 ## Flowchart
 
+### Simplified flowchart and dataflow
+
+The core variables of the project are  `simFlag`, `simStatus`, `simInterruptEventQueue`. They control most of the behavior of the simulation. The orders just created to make the simulation safer!
+
 ![flowchart](imgs/image.png)
+
+The **inputEventHandler** control the defined event (like `quit`, `HW interrupt simulation`).
 
 # Collection
 
