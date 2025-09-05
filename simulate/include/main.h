@@ -27,12 +27,60 @@ static void __guess_coreLog(const char* tag, const char* format, ...) {
 #define __guess_entry(...)  __guess_coreLog("guess] [>>>", __VA_ARGS__)
 #define __guess_exit(...)   __guess_coreLog("guess] [<<<", __VA_ARGS__)
 
+static const uint32_t HEX32_COLORS[] = {
+    HEX32_BLACK,
+    HEX32_WHITE,
+    HEX32_RED,
+    HEX32_GREEN,
+    HEX32_BLUE,
+    HEX32_YELLOW,
+    HEX32_CYAN,
+    HEX32_MAGENTA,
+    HEX32_ORANGE,
+    HEX32_LIME,
+    HEX32_PINK,
+    HEX32_PURPLE,
+    HEX32_VIOLET,
+    HEX32_BROWN,
+    HEX32_MAROON,
+    HEX32_NAVY,
+    HEX32_TEAL,
+    HEX32_OLIVE,
+    HEX32_INDIGO,
+    HEX32_CRIMSON,
+    HEX32_SKYBLUE,
+    HEX32_TURQUOISE,
+    HEX32_CORAL,
+    HEX32_GOLD,
+    HEX32_KHAKI,
+    HEX32_BEIGE,
+    HEX32_GRAY,
+    HEX32_DARKGRAY,
+    HEX32_LIGHTGRAY,
+    HEX32_SILVER
+};
+
+//LEGACY//  void guessSendRenderEvent(){
+//LEGACY//      SDL_Event user_event;
+//LEGACY//      SDL_zero(user_event); 
+//LEGACY//      user_event.type = SDL_USEREVENT;
+//LEGACY//      user_event.user.code = FLAG_RENDER_REQ;
+//LEGACY//      user_event.user.data1 = NULL;
+//LEGACY//      user_event.user.data2 = NULL;
+//LEGACY//      SDL_PushEvent(&user_event);
+//LEGACY//      // __guess_log("Has sent a render event!");
+//LEGACY//      __sim_sleep_ms(1000/RENDER_FPS);
+//LEGACY//  }
+
+#define __set_pixel(x, y)               __simSetPixel(x, y, 0xFFFFFFFF)
+#define __set_color_pixel(x, y, RGBA)   __simSetPixel(x, y, RGBA)
+
 /// @brief 
 /// @param x1 
 /// @param y1 
 /// @param x2 
 /// @param y2 
-void lineBresenham(int x1, int y1, int x2, int y2) {
+static void lineBresenham(int x1, int y1, int x2, int y2) {
     int Dx = abs(x2 - x1);
     int Dy = abs(y2 - y1);
     int x_unit = (x2 > x1) ? 1 : -1;

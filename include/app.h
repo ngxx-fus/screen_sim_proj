@@ -1,5 +1,10 @@
 #ifndef __APP_H__
 #define __APP_H__
+
+#ifdef LOG_HEADER_INCLUDE
+#pragma message("INCLUDE: app.h")
+#endif 
+
 #include "global.h"
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
@@ -67,16 +72,61 @@ static simStatus_t screen_init(){
         -1, 
         SDL_RENDERER_ACCELERATED
     );
+    simScreenBufferTexture = SDL_CreateTexture(
+        gRenderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        SCREEN_W,
+        SCREEN_H
+    );
+    if (!simScreenBufferTexture) {
+        __sim_log("Create simScreenBufferTexture failed: %s", SDL_GetError());
+        exit(1);
+    }
     __sim_exit("screen_init()");
     return STATUS_OKE;
 }
 
 static void     simScreenExit(){
     __sim_entry("simScreenExit()");
+    SDL_DestroyTexture(simScreenBufferTexture);
     SDL_DestroyRenderer(gRenderer);
     SDL_DestroyWindow(gWindow);
     SDL_Quit();
     __sim_exit("simScreenExit()");
+}
+
+__attribute__((weak)) 
+void     main_app(){
+    char buffer[265];
+    snprintf(
+        buffer, sizeof(buffer), 
+        "NO main_app() IMPLEMENT!" 
+    );
+    __sim_log("%s", buffer);
+    if (!font) {
+        __sim_log("[main_app] Font not loaded!");
+        return;
+    }
+    SDL_Color textColor = {255, 255, 255, 255}; // WHITE
+    SDL_SetRenderDrawColor(gRenderer, RGBA_BLACK); // BLACK
+    SDL_RenderClear(gRenderer);
+
+    SDL_Surface *surface = TTF_RenderText_Blended_Wrapped(font, buffer, textColor, SCREEN_W - 10);
+    if (!surface) {
+        __sim_log("<surface> is NULL!");
+        return;
+    }
+    if (gTexture) SDL_DestroyTexture(gTexture);  // tránh leak
+    gTexture = SDL_CreateTextureFromSurface(gRenderer, surface);
+    SDL_FreeSurface(surface);
+
+    SDL_Rect dstRect = {5, 5, 0, 0};
+    SDL_QueryTexture(gTexture, NULL, NULL, &dstRect.w, &dstRect.h);
+
+    SDL_RenderCopy(gRenderer, gTexture, NULL, &dstRect);
+    SDL_RenderPresent(gRenderer);
+
 }
 
 static int      input_thread(void *arg) {
@@ -84,25 +134,28 @@ static int      input_thread(void *arg) {
     SDL_Event e;
     while(simStatus != STATUS_STOPPED){
         while (SDL_PollEvent(&e)) {
+            // __sim_log("Event <%d> occured!", e.type);
             switch (e.type)
             {
                 case SDL_QUIT:
                     __sim_log("Event <SDL_QUIT> occured!");
                     simStatus = STATUS_STOPPED;
+                    __simSetFlag(FLAG_QUIT);
                     break;
                 case SDL_KEYDOWN:
                     if (e.key.keysym.sym == SDLK_q) {
                         __sim_log("Event: <SDLK_q> is pressed!");
-                        if(simStatus == STATUS_RUNNING) simStatus = STATUS_STOPPED;
-                        else __sim_log("Skipped because of simStatus=%d", simStatus);
-                    }else if(e.key.keysym.sym == SDLK_c){
+                        simStatus = STATUS_STOPPED;
+                        __simSetFlag(FLAG_QUIT);
+                    }else 
+                    if(e.key.keysym.sym == SDLK_c){
                         __sim_log("Event <SDL_KEYDOWN | SDLK_c> occured!");
-                        simFlag |= __mask8(FLAG_CONTINUE);
-                    }else if(SDLK_0 <= e.key.keysym.sym && e.key.keysym.sym <= SDLK_9){
+                        __simSetFlag(FLAG_CONTINUE);
+                    }else 
+                    if(SDLK_0 <= e.key.keysym.sym && e.key.keysym.sym <= SDLK_9){
                         uint8_t i = e.key.keysym.sym - SDLK_0;
                         simPushInterruptEvent(i, INT_PULLDOWN);
                     }
-                    
                     break;
                 case SDL_KEYUP:
                     if(SDLK_0 <= e.key.keysym.sym && e.key.keysym.sym <= SDLK_9){
@@ -122,45 +175,14 @@ static int      input_thread(void *arg) {
     return 0;
 }
 
-__attribute__((weak)) 
-void     main_app(){
-    const char* msg = "[main_app] No main_app() implemented!\n";
-    __sim_log("%s", msg);
-
-    if (!font) {
-        __sim_log("[main_app] Font not loaded!\n");
-        return;
-    }
-
-    SDL_Color textColor = {255, 255, 255, 255}; // WHITE
-    SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255); // BLACK
-    SDL_RenderClear(gRenderer);
-
-    SDL_Surface *surface = TTF_RenderText_Blended_Wrapped(font, msg, textColor, SCREEN_W - 10);
-    if (!surface) {
-        printf("TTF_RenderText_Blended_Wrapped error: %s\n", TTF_GetError());
-        return;
-    }
-    if (gTexture) SDL_DestroyTexture(gTexture);  // tránh leak
-    gTexture = SDL_CreateTextureFromSurface(gRenderer, surface);
-    SDL_FreeSurface(surface);
-
-    SDL_Rect dstRect = {5, 5, 0, 0};
-    SDL_QueryTexture(gTexture, NULL, NULL, &dstRect.w, &dstRect.h);
-
-    SDL_RenderCopy(gRenderer, gTexture, NULL, &dstRect);
-    SDL_RenderPresent(gRenderer);
-}
-
 static void     intro(){
     __sim_entry("intro()");
     char buffer[265];
     snprintf(
         buffer, sizeof(buffer), 
-        "\nHello from NgxxFus!\nWxH=%dx%d\nDelay before flush: %dms + %dns\nPress <c> to continue!", 
+        "\nHello from NgxxFus!\nWxH=%dx%d\nFPS=%d\nPress <c> to continue!\nPress <q> to quit!", 
         SCREEN_W, SCREEN_H,
-        DELAY_BEFORE_FLUSH_MS, 
-        DELAY_BEFORE_FLUSH_NS
+        RENDER_FPS 
     );
     __sim_log("%s", buffer);
     if (!font) {
@@ -168,7 +190,7 @@ static void     intro(){
         return;
     }
     SDL_Color textColor = {255, 255, 255, 255}; // WHITE
-    SDL_SetRenderDrawColor(gRenderer, BLACK); // BLACK
+    SDL_SetRenderDrawColor(gRenderer, RGBA_BLACK); // BLACK
     SDL_RenderClear(gRenderer);
 
     SDL_Surface *surface = TTF_RenderText_Blended_Wrapped(font, buffer, textColor, SCREEN_W - 10);
@@ -186,15 +208,19 @@ static void     intro(){
     SDL_RenderCopy(gRenderer, gTexture, NULL, &dstRect);
     SDL_RenderPresent(gRenderer);
     
-    while(TRUE){
-        if(simFlag & __mask32(FLAG_CONTINUE)) {
-            simFlag &= __inv_mask32(FLAG_CONTINUE);
+    while(simStatus != STATUS_STOPPED){
+        if(__simCheckFlag(FLAG_CONTINUE)) {
+            __simClearFlag(FLAG_CONTINUE);
             __sim_log("Continue!");
             break;
         }
+        if(__simCheckFlag(FLAG_QUIT)){
+            __sim_log("Quit!");
+            return;
+        }
         SDL_Delay(1);
     }
-    SDL_SetRenderDrawColor(gRenderer, BLACK);
+    SDL_SetRenderDrawColor(gRenderer, RGBA_BLACK);
     SDL_RenderClear(gRenderer);
     SDL_RenderPresent(gRenderer);
     __sim_exit("intro()");

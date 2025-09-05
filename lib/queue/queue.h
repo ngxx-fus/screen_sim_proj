@@ -1,6 +1,10 @@
 #ifndef __QUEUE_H__
 #define __QUEUE_H__
 
+#ifdef LOG_HEADER_INCLUDE
+#pragma message("INCLUDE: queue.h")
+#endif 
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>

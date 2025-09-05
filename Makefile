@@ -3,15 +3,16 @@ CFLAGS   := -Wall -g
 INCFLAGS := -Iinclude \
             -Iconfig \
             -Ilib \
+            -Isimulate/include \
             -I/usr/include/SDL2
 
 LDFLAGS  := -lSDL2 -lSDL2_ttf -lpthread
 
 SRC      := app.c \
-            $(wildcard src/*.c) \
+            $(wildcard simulate/src/*.c) \
             $(wildcard lib/queue/*.c) \
             $(wildcard lib/log/*.c) \
-			$(wildcard lib/interrupt/*.c)
+            $(wildcard lib/interrupt/*.c)
 
 OBJ      := $(SRC:.c=.o)
 BIN      := app
@@ -33,7 +34,8 @@ clean:
 	rm -vf $(OBJ) $(BIN)
 
 deps:
-	$(CC) $(CFLAGS) $(INCFLAGS) -H -c src/main.c 2>&1 | tee deps.txt
+	$(CC) $(CFLAGS) $(INCFLAGS) -H -c simulate/src/main.c 2>&1 | tee deps.txt
 
 leak_check:
-	valgrind --leak-check=full --track-fds=yes --show-leak-kinds=all --log-file=valgrind.%p.log ./$(BIN)
+	valgrind --leak-check=full --track-fds=yes --show-leak-kinds=all \
+		--log-file=valgrind.%p.log ./$(BIN)

@@ -1,6 +1,11 @@
 #ifndef __GLOBAL_H__
 #define __GLOBAL_H__
 
+// #define LOG_HEADER_INCLUDE
+#ifdef LOG_HEADER_INCLUDE
+#pragma message("INCLUDE: global.h")
+#endif
+
 /// APP'S HEADER //////////////////////////////////////////////////////////////////////////////////
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -16,8 +21,8 @@
 
 /// APP'S HEADER //////////////////////////////////////////////////////////////////////////////////
 
-#include "../config/color.h"
 #include "../config/config.h"
+#include "../config/color.h"
 
 /// GLOBL VARS ///////////////////////////////////////////////////////////////////////////////////
 
@@ -29,11 +34,35 @@ extern Queue_t          *toMainThrQueue;        /// Queue for sending messages/e
 extern Queue_t          *toAppThrQueue;         /// Queue for sending messages/events to app thread
 extern Queue_t          *keyboardEventQueue;    /// Queue for keyboard input events
 extern pthread_mutex_t  SDLLock;                /// Mutex lock for SDL operations (thread-safety)
-extern pthread_mutex_t  simFlagLock;            /// Mutex lock for simulation flags lock
+extern pthread_mutex_t  simFlagLock;            /// Mutex lock for simulation flags 
+extern pthread_mutex_t  simScreenBufferLock;    /// Mutex lock for screen buffer
 extern simStatus_t      simStatus;              /// Current simulation status
-// extern simIntReg_t      negInterruptRegister;   /// Interrupt resgister
-// extern simIntReg_t      posInterruptRegister;   /// Interrupt resgister
 extern simFlag_t        simFlag;                /// Software (System) flag
+extern SDL_Event        eventSendRenderRequest; /// Event that uses to send the render request; Only call from outside main thread;
+extern SDL_Event        eventReceiveRenderRequest;  /// Event uses to stored the send the render request event; Only call from inside main thread;
+extern simColor_t       simScreenBuffer[SCREEN_W * SCREEN_H];
+extern SDL_Texture*     simScreenBufferTexture;
+
+#ifndef rep
+#define rep(i, a, b) for( simSize_t i = (a); (i) < (b); ++(i))
+#endif
+
+#ifndef rep
+#define rev(i, a, b) for( simSize_t i = (a); (i) > (b); --(i))
+#endif
+
+/// @brief Combine 4*8 bit color channel into 32bit RGBA, A=0xFF (255)
+#define __combiRGB(R, G, B) ((((simColor_t)R)<<24) | (((simColor_t)G)<<16) | (((simColor_t)B)<<8) | ((simColor_t)0xFF))
+/// @brief Combine 4*8 bit color channel into 32bit RGBA 
+#define __combiRGBA(R, G, B, A) ((((simColor_t)R)<<24) | (((simColor_t)G)<<16) | (((simColor_t)B)<<8) | ((simColor_t)A))
+/// @brief Get 8 bit RED from 32 bit RGBA
+#define __getRFromRGBA(RGBA)    (((simColor_t)(RGBA) >> 24) & 0xFF)
+/// @brief Get 8 bit GREEN from 32 bit RGBA
+#define __getGFromRGBA(RGBA)    (((simColor_t)(RGBA) >> 16) & 0xFF)
+/// @brief Get 8 bit BLUE from 32 bit RGBA
+#define __getBFromRGBA(RGBA)    (((simColor_t)(RGBA) >>  8) & 0xFF)
+/// @brief Get 8 bit ALPHA from 32 bit RGBA
+#define __getAFromRGBA(RGBA)    (((simColor_t)(RGBA) >>  0) & 0xFF)
 
 #ifndef __entry_exit_critical_section
 #define __entry_exit_critical_section
@@ -93,7 +122,6 @@ typedef int (*simPThreadFunc)(void*);
 
 #include "../lib/log/log.h"
 
-
 #define __USEC(i)  i##000ULL                    /// Convert from microsecond to nanosecond 
 #define __MSEC(i)  i##000000ULL                 /// Convert from millisecond to nanosecond
 #define __SEC(i)   i##000000000ULL              /// Convert from second to nanosecond
@@ -130,46 +158,40 @@ typedef int (*simPThreadFunc)(void*);
     nanosleep(&ts, NULL);                         \
 } while(FALSE)
 
-/// @brief Set a flag, then another thread/itself will proceed
-#define __set_flag(flag) do{    \
-    if((flag) >= sizeof(simFlag)) { \
-        __sim_log("Error: __set_flag(%d)", flag); \
-        break; \
-    } \
-    __entry_critical_section(&simFlagLock); \
-    simFlag |= __mask32(flag); \
-    __exit_critical_section(&simFlagLock);  \
-}while(FALSE);
 
-/// @brief Set render flag, then main thread will render the screen
-#define __set_render_req() do{  \
-    __entry_critical_section(&simFlagLock); \
-    simFlag |= __mask32(FLAG_RENDER_REQ); \
-    __exit_critical_section(&simFlagLock);  \
-}while(FALSE);
+/// FLAGS CTL ///////////////////////////////////////////////////////////////////////////////////// 
 
-/// @brief Clear flag and render. Noted that ONLY CALL it from main thread
-#define __clr_req_and_render() do{  \
-    __entry_critical_section(&simFlagLock); \
-    simFlag &= __inv_mask32(FLAG_RENDER_REQ); \
-    SDL_RenderPresent(gRenderer); \
-    __exit_critical_section(&simFlagLock);  \
-}while(FALSE);
+static inline void __simSetFlag(simFlag_t f){
+    if(f >= sizeof(simFlag_t)*8){
+        __sim_log("[__simSetFlag] Unknown flag f=%d", f);
+        return;
+    }
+    __entry_critical_section(&simFlagLock);
+    simFlag |= (f);
+    __exit_critical_section(&simFlagLock);
+}
 
-/// REQ EVENT /////////////////////////////////////////////////////////////////////////////////////
+static inline simFlag_t __simCheckFlag(simFlag_t f){
+    if(f >= sizeof(simFlag_t)*8){
+        __sim_log("[__simSetFlag] Unknown flag f=%d", f);
+        return 0;
+    }
+    simFlag_t res = FALSE;
+    __entry_critical_section(&simFlagLock);
+    res = (simFlag & (f))?(TRUE):(FALSE);
+    __exit_critical_section(&simFlagLock);
+    return res;
+}
 
-enum REQ_CODE{
-    REQ_SIM_EXIT        = 0x0,
-    REQ_SCR_RENDER      = 0x1,
-};
-
-// static void simSendRenderEvent(){
-//     SDL_Event event;
-//     SDL_memset(&event, 0, sizeof(event)); // safe initialization
-//     event.type = SDL_USEREVENT;
-//     event.user.code = REQ_SCR_RENDER;
-//     SDL_PushEvent(&event);
-// }
+static inline void __simClearFlag(simFlag_t f){
+    if(f >= sizeof(simFlag_t)*8){
+        __sim_log("[__simSetFlag] Unknown flag f=%d", f);
+        return;
+    }
+    __entry_critical_section(&simFlagLock);
+    simFlag |= (f);
+    __exit_critical_section(&simFlagLock);
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #endif

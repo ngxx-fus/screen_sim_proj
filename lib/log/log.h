@@ -1,6 +1,10 @@
 #ifndef __SIM_LOG_H__
 #define __SIM_LOG_H__
 
+#ifdef LOG_HEADER_INCLUDE
+#pragma message("INCLUDE: log.h")
+#endif 
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>

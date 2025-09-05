@@ -1,3 +1,6 @@
+#ifndef __SIM_INTERRUPT_H__
+#define __SIM_INTERRUPT_H__
+
 #include "../../include/global.h"
 #include "../queue/queue.h"
 #include "../log/log.h"
@@ -78,3 +81,6 @@ simStatus_t     simPushInterruptEvent(interruptID_t interruptID, interruptType_t
 void            simInterruptExit();
 /// @Brief A thread to process all events on queue 
 int             loopTrackInterruptService(void* arg);
+
+
+#endif
