@@ -113,3 +113,7 @@ The full definition of __sim_coreLog:
         va_end(args);
     }
 ```
+
+# DEMO
+
+![hdmi1-fast-small](https://github.com/user-attachments/assets/09ac09b1-548f-41df-9548-77fe3c2c6bfa)
